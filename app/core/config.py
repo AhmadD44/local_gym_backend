@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "RS256"
     jwt_private_key_path: str = "./secrets/jwt_private.pem"
     jwt_public_key_path: str = "./secrets/jwt_public.pem"
+    # Optional: provide the PEM content directly via env vars instead of a
+    # mounted file. Some PaaS platforms (Render, etc.) make arbitrary file
+    # mounts finicky but always support plain env vars reliably. If set,
+    # these take priority over *_path above. Paste either the real
+    # multi-line PEM, or a single-line version with literal \n sequences
+    # (both are handled).
+    jwt_private_key_pem: str = ""
+    jwt_public_key_pem: str = ""
     jwt_issuer: str = "gym-backend"
     jwt_audience: str = "gym-mobile-app"
     access_token_expire_minutes: int = 20
@@ -60,10 +68,14 @@ class Settings(BaseSettings):
 
     @property
     def jwt_private_key(self) -> str:
+        if self.jwt_private_key_pem:
+            return self.jwt_private_key_pem.replace("\\n", "\n")
         return Path(self.jwt_private_key_path).read_text()
 
     @property
     def jwt_public_key(self) -> str:
+        if self.jwt_public_key_pem:
+            return self.jwt_public_key_pem.replace("\\n", "\n")
         return Path(self.jwt_public_key_path).read_text()
 
     @property

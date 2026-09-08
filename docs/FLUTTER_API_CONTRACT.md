@@ -9,8 +9,11 @@ Health checks are at the root (no `/api/v1` prefix).
 ## 1. Conventions (read this first)
 
 ### Base URL
-`http://<host>/api/v1` (dev: `http://localhost:8000/api/v1`). WebSocket: `ws://<host>/api/v1/ws/...`
-(`wss://` in production).
+**Production**: `https://local-gym-backend.onrender.com/api/v1`
+WebSocket: `wss://local-gym-backend.onrender.com/api/v1/ws/...`
+Interactive docs: `https://local-gym-backend.onrender.com/docs`
+
+Local dev (only if running the backend yourself via `docker compose up`): `http://localhost:8000/api/v1` / `ws://localhost:8000/api/v1/ws/...`
 
 ### Authentication
 Bearer JWT in the `Authorization` header on every protected request:
@@ -94,9 +97,15 @@ no default and not marked optional below are required; omitting them is a 422.
 Every upload endpoint takes exactly one field, always named **`file`**, `multipart/form-data`,
 and returns the full parent resource (not just a URL) with the new `..._url`/`media_url` field
 populated. Uploaded images are re-validated server-side by sniffing actual file bytes (JPEG/PNG/
-WEBP only, ≤8MB) — the client's declared Content-Type/extension is not trusted, so a renamed
-non-image file is rejected with `400 bad_request` regardless of its extension. The stored filename
-is always randomly generated (never the original filename).
+WEBP accepted, ≤8MB) — the client's declared Content-Type/extension is not trusted, so a renamed
+non-image file is rejected with `400 bad_request` regardless of its extension.
+
+**Every accepted image is server-side resized (max 1200px on the longest side, never upscaled)
+and re-encoded as JPEG (quality 80), regardless of the upload format** — so the returned URL
+always ends in `.jpg`, even if you uploaded a `.png`. This is intentional (keeps storage/bandwidth
+usage low with no visible quality loss on a phone screen); don't assume the output matches your
+input format or resolution. The stored filename is always randomly generated (never the original
+filename), and EXIF metadata (including GPS) is stripped in the process.
 
 ### WebSocket
 One endpoint: `GET /api/v1/ws/chat/{conversation_id}?token=<access_token>` (upgrade request).

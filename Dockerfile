@@ -35,8 +35,14 @@ USER appuser
 
 EXPOSE 8000
 
+# PORT defaults to 8000 (matches docker-compose.yml / docker-compose.prod.yml,
+# neither of which set PORT). Platforms that assign their own port dynamically
+# (e.g. Render) set PORT themselves, and this picks it up automatically with
+# no other config needed.
+ENV PORT=8000
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:8000/health/live || exit 1
+    CMD curl -f http://localhost:${PORT}/health/live || exit 1
 
 # --proxy-headers makes uvicorn trust X-Forwarded-For/X-Forwarded-Proto from
 # FORWARDED_ALLOW_IPS (default: only localhost, i.e. effectively untrusted)
@@ -48,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 # into one shared bucket. Set FORWARDED_ALLOW_IPS to your proxy/LB's
 # address (or CIDR, or "*" if the container network itself is trusted).
 ENV FORWARDED_ALLOW_IPS=127.0.0.1
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=$FORWARDED_ALLOW_IPS"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips=$FORWARDED_ALLOW_IPS"]

@@ -1,3 +1,4 @@
+import base64
 from functools import lru_cache
 from pathlib import Path
 
@@ -23,12 +24,14 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "RS256"
     jwt_private_key_path: str = "./secrets/jwt_private.pem"
     jwt_public_key_path: str = "./secrets/jwt_public.pem"
-    # Optional: provide the PEM content directly via env vars instead of a
-    # mounted file. Some PaaS platforms (Render, etc.) make arbitrary file
-    # mounts finicky but always support plain env vars reliably. If set,
-    # these take priority over *_path above. Paste either the real
-    # multi-line PEM, or a single-line version with literal \n sequences
-    # (both are handled).
+    # Optional alternatives to a mounted file, for platforms where that's
+    # finicky (Render, etc.). Priority: *_b64 > *_pem > *_path. Prefer
+    # *_b64 — pasting a multi-line PEM through a web form's env-var field
+    # is prone to having its newlines mangled (this bit us once already);
+    # base64 is a single line with no special characters, so there's
+    # nothing for a text field to corrupt.
+    jwt_private_key_b64: str = ""
+    jwt_public_key_b64: str = ""
     jwt_private_key_pem: str = ""
     jwt_public_key_pem: str = ""
     jwt_issuer: str = "gym-backend"
@@ -68,12 +71,16 @@ class Settings(BaseSettings):
 
     @property
     def jwt_private_key(self) -> str:
+        if self.jwt_private_key_b64:
+            return base64.b64decode(self.jwt_private_key_b64).decode()
         if self.jwt_private_key_pem:
             return self.jwt_private_key_pem.replace("\\n", "\n")
         return Path(self.jwt_private_key_path).read_text()
 
     @property
     def jwt_public_key(self) -> str:
+        if self.jwt_public_key_b64:
+            return base64.b64decode(self.jwt_public_key_b64).decode()
         if self.jwt_public_key_pem:
             return self.jwt_public_key_pem.replace("\\n", "\n")
         return Path(self.jwt_public_key_path).read_text()

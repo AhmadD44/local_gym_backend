@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -7,6 +9,7 @@ from app.core.database import get_db
 from app.core.redis import get_redis
 
 router = APIRouter(tags=["health"])
+logger = logging.getLogger("gym.health")
 
 
 @router.get("/health", summary="Basic liveness/info endpoint")
@@ -26,6 +29,7 @@ async def readiness(db: AsyncSession = Depends(get_db)):
         await db.execute(text("SELECT 1"))
         checks["database"] = "ok"
     except Exception:
+        logger.exception("health_ready_database_check_failed")
         checks["database"] = "error"
 
     try:
@@ -33,6 +37,7 @@ async def readiness(db: AsyncSession = Depends(get_db)):
         await redis.ping()
         checks["redis"] = "ok"
     except Exception:
+        logger.exception("health_ready_redis_check_failed")
         checks["redis"] = "error"
 
     status_ok = all(v == "ok" for v in checks.values())

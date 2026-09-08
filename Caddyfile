@@ -1,0 +1,20 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	# Caddy automatically obtains and renews a Let's Encrypt certificate for
+	# DOMAIN the first time it starts, as long as the domain's DNS A/AAAA
+	# record already points at this server's public IP and ports 80+443
+	# are reachable from the internet. No manual certbot/cert management.
+	reverse_proxy api:8000
+
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}

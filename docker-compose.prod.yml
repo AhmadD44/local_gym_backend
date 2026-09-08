@@ -1,0 +1,105 @@
+# Production stack — standalone (not merged with docker-compose.yml, to
+# avoid override-merge surprises with `ports`/`volumes`). Use this file, not
+# docker-compose.yml, on your actual server:
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Differences from the dev compose file:
+#   - Postgres/Redis have NO published ports (reachable only from other
+#     containers on this stack's private network — never from the host or
+#     the internet).
+#   - Caddy terminates HTTPS on 80/443 (auto Let's Encrypt cert for DOMAIN)
+#     and reverse-proxies to the api container; the api container itself
+#     has no published port either.
+#   - Everything restarts automatically (`unless-stopped`) so the stack
+#     survives a host reboot or a crashed container.
+#   - Config comes from .env.production (copy .env.production.example and
+#     fill in real values — see DEPLOYMENT.md).
+#
+# Explicit project name: without this, Compose derives the project name
+# from the directory ("gym_backend"), which is the SAME name the dev
+# docker-compose.yml uses — running both on one machine (e.g. testing this
+# file locally before deploying) would collide container/volume/network
+# names with the dev stack. A distinct name keeps them fully independent.
+name: gym_backend_prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gym}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-gym}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gym} -d ${POSTGRES_DB:-gym}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-gym}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gym}
+      REDIS_URL: redis://redis:6379/0
+      # Caddy is the only thing that can reach `api` (it's on this same
+      # private compose network and the api port isn't published to the
+      # host), so trusting all X-Forwarded-For here is safe — nothing
+      # external can spoof it without already being inside this stack.
+      FORWARDED_ALLOW_IPS: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./secrets:/app/secrets:ro
+      - uploads_data:/app/uploads
+    # The Dockerfile's default CMD only starts uvicorn — it deliberately
+    # does NOT run migrations on its own (a multi-instance production
+    # deployment must not have every replica racing to run `alembic
+    # upgrade head` concurrently). This override runs migrations once
+    # before starting uvicorn, same as the dev compose file. If you scale
+    # `api` to more than one replica, move this migration step to a
+    # separate one-off `docker compose run` invocation instead of leaving
+    # it on every replica's startup command.
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=$${FORWARDED_ALLOW_IPS:-127.0.0.1}"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env.production (e.g. api.yourdomain.com)}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env.production (for Let's Encrypt renewal notices)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  uploads_data:
+  caddy_data:
+  caddy_config:

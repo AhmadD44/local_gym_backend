@@ -11,6 +11,7 @@ async def test_register_creates_member_and_ignores_role_field(client):
     assert resp.status_code == 201
     body = resp.json()
     assert "access_token" in body and "refresh_token" in body
+    assert body["role"] == "MEMBER"
 
     me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {body['access_token']}"})
     assert me.status_code == 200
@@ -36,11 +37,13 @@ async def test_login_success_and_refresh_rotation(client, member_user):
     login = await client.post("/api/v1/auth/login", json={"email": user.email, "password": password})
     assert login.status_code == 200
     tokens = login.json()
+    assert tokens["role"] == "MEMBER"
 
     refreshed = await client.post("/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
     assert refreshed.status_code == 200
     new_tokens = refreshed.json()
     assert new_tokens["refresh_token"] != tokens["refresh_token"]
+    assert new_tokens["role"] == "MEMBER"
 
 
 async def test_refresh_token_reuse_is_detected_and_revokes_family(client, member_user):

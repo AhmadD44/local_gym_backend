@@ -42,7 +42,7 @@ async def register(payload: RegisterRequest, request: Request, db: AsyncSession 
     access, refresh = await auth_service.issue_token_pair(
         db, user=user, user_agent=request.headers.get("user-agent"), ip_address=_client_ip(request)
     )
-    return TokenPairResponse(access_token=access, refresh_token=refresh)
+    return TokenPairResponse(access_token=access, refresh_token=refresh, role=user.role)
 
 
 @router.post(
@@ -56,7 +56,7 @@ async def login(payload: LoginRequest, request: Request, db: AsyncSession = Depe
     access, refresh = await auth_service.issue_token_pair(
         db, user=user, user_agent=request.headers.get("user-agent"), ip_address=_client_ip(request)
     )
-    return TokenPairResponse(access_token=access, refresh_token=refresh)
+    return TokenPairResponse(access_token=access, refresh_token=refresh, role=user.role)
 
 
 @router.post(
@@ -69,13 +69,13 @@ async def login(payload: LoginRequest, request: Request, db: AsyncSession = Depe
     dependencies=[Depends(RateLimiter(times=20, seconds=60, scope="refresh"))],
 )
 async def refresh(payload: RefreshRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    access, refresh_token = await auth_service.refresh_token_pair(
+    access, refresh_token, role = await auth_service.refresh_token_pair(
         db,
         refresh_token=payload.refresh_token,
         user_agent=request.headers.get("user-agent"),
         ip_address=_client_ip(request),
     )
-    return TokenPairResponse(access_token=access, refresh_token=refresh_token)
+    return TokenPairResponse(access_token=access, refresh_token=refresh_token, role=role)
 
 
 @router.post("/logout", response_model=MessageResponse, summary="Revoke a single refresh session")

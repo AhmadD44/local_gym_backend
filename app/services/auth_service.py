@@ -141,7 +141,7 @@ async def _revoke_family(session: AsyncSession, family_id: str) -> None:
 
 async def refresh_token_pair(
     session: AsyncSession, *, refresh_token: str, user_agent: str | None, ip_address: str | None
-) -> tuple[str, str]:
+) -> tuple[str, str, UserRole]:
     try:
         payload = decode_token(refresh_token, expected_type=TokenType.REFRESH)
     except TokenError as exc:
@@ -189,7 +189,7 @@ async def refresh_token_pair(
         )
     )
     await session.commit()
-    return new_access_token, new_refresh_token
+    return new_access_token, new_refresh_token, user.role
 
 
 async def logout(session: AsyncSession, *, refresh_token: str) -> None:

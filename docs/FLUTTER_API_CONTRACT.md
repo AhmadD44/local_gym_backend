@@ -121,19 +121,23 @@ Public. Rate-limited (3/min per IP, `RATE_LIMIT_REGISTER_PER_MINUTE`). No role �
 the body is silently ignored (never trust the client for role assignment; this always creates a
 `MEMBER`).
 - Body: `{ "email": string(email), "password": string(10–128 chars), "full_name": string(1–150) }`
-- 201 → `TokenPairResponse`: `{ "access_token": string, "refresh_token": string, "token_type": "bearer" }`
+- 201 → `TokenPairResponse`: `{ "access_token": string, "refresh_token": string, "token_type": "bearer", "role": UserRole }`
+  (always `"MEMBER"` for this endpoint — included for shape-consistency with login/refresh, see below)
 - Errors: `409 conflict` (email taken), `422 validation_error`
 
 ### `POST /auth/login`
 Public. Rate-limited (5/min per IP, `RATE_LIMIT_LOGIN_PER_MINUTE`).
 - Body: `{ "email": string, "password": string }`
-- 200 → `TokenPairResponse` (same shape as register)
+- 200 → `TokenPairResponse` (same shape as register) — **`role` tells the client which
+  dashboard/navigation to route to immediately after login, without a follow-up `GET /auth/me` call.**
 - Errors: `401 unauthorized` (wrong password OR disabled account — same message either way), `429 rate_limited`
 
 ### `POST /auth/refresh`
 Public (the refresh token itself is the credential). Rate-limited (20/min per IP).
 - Body: `{ "refresh_token": string }`
 - 200 → `TokenPairResponse` — **both** tokens are new; the old refresh token is now invalid (rotation).
+  `role` is included here too (re-derived from the account on every refresh), so a long-lived session
+  always has the current role on hand without re-fetching `/auth/me`.
 - Errors: `401 unauthorized` — covers: expired, malformed, unknown, **or already-used** (reuse of a
   rotated token revokes the *entire* session family — every refresh token issued from that login is
   invalidated; the user must log in again). The client must always store the *new* pair from every

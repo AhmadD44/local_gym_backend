@@ -439,6 +439,12 @@ Requires auth. Query: `upcoming_only` (default `true`).
 ### `POST /classes` / `PATCH /classes/{class_id}` (admin only)
 - Create body: `{ "name","description"?,"trainer_id":uuid,"capacity":int(1–500),"location"?,"start_time":datetime,"end_time":datetime }`
 
+### `GET /classes/{class_id}/bookings` (admin only)
+The roster — who's booked into this class. Not paginated (capacity caps at 500, so it's always
+bounded). Query: `status_filter` (ClassBookingStatus, optional — omit to see cancellations too).
+- 200 → `ClassBookingAdminRead[]` — same fields as `ClassBookingRead` below, **plus an embedded
+  `member: MemberProfileRead`** (a bare `member_id` isn't useful at check-in).
+
 ### `POST /classes/{class_id}/book`
 MEMBER only. **Concurrency-safe** — capacity is enforced with a DB row lock; under a simultaneous
 race for the last seat, exactly one request gets `201` and the other gets `409`.

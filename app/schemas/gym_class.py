@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import ClassBookingStatus
 from app.schemas.common import TimestampedModel
-from app.schemas.profiles import TrainerProfileRead
+from app.schemas.profiles import MemberProfileRead, TrainerProfileRead
 
 
 class GymClassCreate(BaseModel):
@@ -51,3 +51,11 @@ class ClassBookingRead(BaseModel):
     status: ClassBookingStatus
     booked_at: datetime
     cancelled_at: datetime | None
+
+
+class ClassBookingAdminRead(ClassBookingRead):
+    """Same as ClassBookingRead but with the member's profile embedded —
+    used for the admin roster view (who's booked into this class), where
+    a bare member_id isn't useful at the front desk."""
+
+    member: MemberProfileRead

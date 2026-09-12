@@ -44,6 +44,7 @@ class ClassBooking(Base, UUIDPKMixin):
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     gym_class = relationship("GymClass")
+    member = relationship("MemberProfile")
 
     __table_args__ = (
         Index(

@@ -96,6 +96,44 @@ async def test_concurrent_booking_only_one_gets_last_seat(
     assert statuses == [201, 409]
 
 
+async def test_admin_can_see_class_roster(client, db_session, trainer_user, admin_user, make_user, auth_headers):
+    trainer, _ = trainer_user
+    admin, _ = admin_user
+    gym_class = await _make_class(db_session, capacity=5, trainer_user=trainer)
+    member_a, _ = await make_user(UserRole.MEMBER)
+    member_b, _ = await make_user(UserRole.MEMBER)
+    headers_a = await auth_headers(member_a)
+    headers_b = await auth_headers(member_b)
+    admin_headers = await auth_headers(admin)
+
+    await client.post(f"/api/v1/classes/{gym_class.id}/book", headers=headers_a)
+    booking_b = await client.post(f"/api/v1/classes/{gym_class.id}/book", headers=headers_b)
+    await client.post(f"/api/v1/classes/bookings/{booking_b.json()['id']}/cancel", headers=headers_b)
+
+    roster = await client.get(f"/api/v1/classes/{gym_class.id}/bookings", headers=admin_headers)
+    assert roster.status_code == 200
+    all_bookings = roster.json()
+    assert len(all_bookings) == 2
+    assert {b["status"] for b in all_bookings} == {"BOOKED", "CANCELLED"}
+    assert all(b["member"]["id"] for b in all_bookings)
+
+    active_only = await client.get(
+        f"/api/v1/classes/{gym_class.id}/bookings", params={"status_filter": "BOOKED"}, headers=admin_headers
+    )
+    assert len(active_only.json()) == 1
+    assert active_only.json()[0]["status"] == "BOOKED"
+
+
+async def test_class_roster_requires_admin(client, db_session, trainer_user, member_user, auth_headers):
+    trainer, _ = trainer_user
+    gym_class = await _make_class(db_session, capacity=5, trainer_user=trainer)
+    member, _ = member_user
+    headers = await auth_headers(member)
+
+    resp = await client.get(f"/api/v1/classes/{gym_class.id}/bookings", headers=headers)
+    assert resp.status_code == 403
+
+
 async def test_cancel_booking_frees_seat(client, db_session, trainer_user, make_user, auth_headers):
     trainer, _ = trainer_user
     gym_class = await _make_class(db_session, capacity=1, trainer_user=trainer)

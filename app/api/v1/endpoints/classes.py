@@ -9,10 +9,16 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.exceptions import NotFoundError
 from app.core.permissions import get_member_profile_for_user, require_admin, require_role
-from app.models.enums import UserRole
-from app.models.gym_class import GymClass
+from app.models.enums import ClassBookingStatus, UserRole
+from app.models.gym_class import ClassBooking, GymClass
 from app.models.user import User
-from app.schemas.gym_class import ClassBookingRead, GymClassCreate, GymClassRead, GymClassUpdate
+from app.schemas.gym_class import (
+    ClassBookingAdminRead,
+    ClassBookingRead,
+    GymClassCreate,
+    GymClassRead,
+    GymClassUpdate,
+)
 from app.services import class_service
 
 router = APIRouter(prefix="/classes", tags=["classes"])
@@ -76,6 +82,35 @@ async def update_class(class_id: uuid.UUID, payload: GymClassUpdate, db: AsyncSe
     await db.commit()
     await db.refresh(gym_class)
     return await _to_read(db, gym_class)
+
+
+@router.get(
+    "/{class_id}/bookings",
+    response_model=list[ClassBookingAdminRead],
+    dependencies=[Depends(require_admin)],
+    summary="List a class's roster (admin only)",
+    description="Who's booked into this class — the front-desk/check-in view. Not paginated: "
+    "capacity is capped at 500, so a class's booking list is always bounded. Pass "
+    "status_filter=BOOKED to see only active bookings (cancellations included by default).",
+)
+async def list_class_bookings(
+    class_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    status_filter: ClassBookingStatus | None = None,
+):
+    gym_class = await db.get(GymClass, class_id)
+    if gym_class is None:
+        raise NotFoundError("Class not found")
+    stmt = (
+        select(ClassBooking)
+        .where(ClassBooking.class_id == class_id)
+        .options(selectinload(ClassBooking.member))
+        .order_by(ClassBooking.booked_at)
+    )
+    if status_filter:
+        stmt = stmt.where(ClassBooking.status == status_filter)
+    result = await db.execute(stmt)
+    return list(result.scalars().unique().all())
 
 
 @router.post(

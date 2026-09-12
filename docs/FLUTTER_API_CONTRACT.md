@@ -44,6 +44,12 @@ Validation errors (422) additionally include a `details` array (Pydantic-style, 
 `input` is redacted to `"[redacted]"` for password/token fields specifically; other fields echo
 the submitted value to aid debugging.
 
+**Field name note:** the top-level, always-present field is `error.message` (not `msg`). Only
+inside a 422's `details[]` array does the per-field message use Pydantic's own field name `msg`
+— that's a different field at a different nesting level, not an inconsistency. For a generic
+error display, read `error.message`; only reach into `details[].msg` if you want field-level
+inline validation errors.
+
 Common `error.code` values you should branch on in the client: `not_found`, `forbidden`,
 `unauthorized`, `conflict`, `bad_request`, `rate_limited` (429, includes a `Retry-After` header),
 `validation_error` (422), `internal_error` (500 — generic message only, never a stack trace).
@@ -507,8 +513,11 @@ Requires auth. Registers a push token (idempotent — same token twice is a no-o
 - Body: `{ "token": string, "platform": "ANDROID"|"IOS"|"WEB" }`
 - 201 → `{ "id": uuid }`
 
-*(Push delivery itself is a no-op unless the server is configured with `PUSH_PROVIDER=fcm` — the
-notification row is always created and visible via `GET /notifications` regardless.)*
+*(⚠ Push delivery is currently a no-op even when `PUSH_PROVIDER=fcm` is set — the FCM integration
+point in `app/services/push_provider.py` is a stub that only logs, it doesn't call Firebase yet.
+Registering a token via this endpoint stores it and returns 201, but no real device notification
+will ever arrive. Build the in-app notification list (`GET /notifications`) as the source of truth
+for now; treat push as a future enhancement, not something to rely on for v1.)*
 
 ---
 
@@ -717,6 +726,12 @@ index-based enum mapping, since these are transmitted as strings, not integers.
    gap, not a functional one.
 2. **`GET /admin/audit-logs` has no declared response schema** (see §18) — hand-documented above
    from source; low priority (admin/back-office only).
-3. All other 90 endpoints have complete, accurate OpenAPI schemas matching this document exactly
+3. **Push notifications don't actually deliver yet** (see §11) — `POST /notifications/devices`
+   works and stores the token, but the FCM send path is currently a stub. Build against
+   `GET /notifications` as the real source of truth; don't build UI that assumes a tray
+   notification will ever arrive.
+4. **Password reset now sends a real email** (via Brevo) once `EMAIL_PROVIDER=brevo` is configured
+   in production — `debug_reset_token` is dev/test-only (`DEBUG=true`), always `null` otherwise.
+5. All other endpoints have complete, accurate OpenAPI schemas matching this document exactly
    (this document was generated directly from a live `/openapi.json` capture plus source
    cross-check, not from memory).

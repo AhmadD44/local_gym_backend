@@ -289,6 +289,15 @@ MEMBER only. Latest subscription (any status), or `null` if the member never sub
 }
 ```
 
+### `GET /memberships/subscriptions` (admin only, paginated)
+The admin-side list — use this to find subscriptions awaiting an in-person cash payment (filter
+`status_filter=PENDING`), which is what you act on via `confirm-payment` below.
+- Query: `page`, `page_size`, `status_filter` (MembershipStatus), `payment_status_filter` (PaymentStatus)
+- 200 → `Page<MembershipSubscriptionAdminRead>` — same fields as `MembershipSubscriptionRead` below,
+  **plus an embedded `member: MemberProfileRead`** so you can show who it belongs to without a
+  second lookup (the member's own `GET /memberships/me` doesn't embed this — it already knows who
+  it belongs to).
+
 ### `POST /memberships/subscribe`
 MEMBER only.
 - Body: `{ "plan_id": uuid }`

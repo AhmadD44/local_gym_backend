@@ -6,6 +6,7 @@ from pydantic import Field
 
 from app.models.enums import MembershipStatus, PaymentStatus
 from app.schemas.common import ORMModel, TimestampedModel
+from app.schemas.profiles import MemberProfileRead
 
 
 class MembershipPlanCreate(ORMModel):
@@ -56,3 +57,14 @@ class MembershipSubscriptionRead(TimestampedModel):
     confirmed_at: datetime | None
     cancelled_at: datetime | None
     notes: str | None
+
+
+class MembershipSubscriptionAdminRead(MembershipSubscriptionRead):
+    """Same as MembershipSubscriptionRead but with the member's profile
+    embedded — used only by the admin list endpoint, where you need to
+    know *whose* subscription this is to act on it (find them at the
+    front desk, confirm their cash payment, etc). The member's own
+    GET /memberships/me stays lightweight since it already knows who it
+    belongs to."""
+
+    member: MemberProfileRead

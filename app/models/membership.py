@@ -52,6 +52,7 @@ class MembershipSubscription(Base, UUIDPKMixin, TimestampMixin):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     plan = relationship("MembershipPlan")
+    member = relationship("MemberProfile")
 
     __table_args__ = (
         # A member may only have one PENDING/ACTIVE subscription at a time.

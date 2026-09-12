@@ -7,8 +7,9 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.exceptions import NotFoundError
+from app.core.pagination import Page, PageParams, paginate
 from app.core.permissions import get_member_profile_for_user, require_admin, require_role
-from app.models.enums import UserRole
+from app.models.enums import MembershipStatus, PaymentStatus, UserRole
 from app.models.membership import MembershipPlan, MembershipSubscription
 from app.models.user import User
 from app.schemas.membership import (
@@ -18,6 +19,7 @@ from app.schemas.membership import (
     MembershipPlanRead,
     MembershipPlanUpdate,
     MembershipSubscribeRequest,
+    MembershipSubscriptionAdminRead,
     MembershipSubscriptionRead,
 )
 from app.services import membership_service
@@ -83,6 +85,35 @@ async def get_my_membership(
         .limit(1)
     )
     return result.scalars().first()
+
+
+@router.get(
+    "/subscriptions",
+    response_model=Page[MembershipSubscriptionAdminRead],
+    dependencies=[Depends(require_admin)],
+    summary="List membership subscriptions (admin only)",
+    description="Filter by `status=PENDING` to find subscriptions awaiting an in-person cash "
+    "payment — this is the list a front-desk admin works through to confirm payments.",
+)
+async def list_subscriptions(
+    db: AsyncSession = Depends(get_db),
+    page: int = 1,
+    page_size: int = 20,
+    status_filter: MembershipStatus | None = None,
+    payment_status_filter: PaymentStatus | None = None,
+):
+    stmt = (
+        select(MembershipSubscription)
+        .options(selectinload(MembershipSubscription.plan), selectinload(MembershipSubscription.member))
+        .order_by(MembershipSubscription.created_at.desc())
+    )
+    if status_filter:
+        stmt = stmt.where(MembershipSubscription.status == status_filter)
+    if payment_status_filter:
+        stmt = stmt.where(MembershipSubscription.payment_status == payment_status_filter)
+    params = PageParams(page=page, page_size=page_size)
+    items, total = await paginate(db, stmt, params)
+    return Page.create(items, total, params)
 
 
 @router.post(

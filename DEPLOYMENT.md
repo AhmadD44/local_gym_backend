@@ -131,12 +131,6 @@ data and uploads are untouched (they're on named volumes).
 
 ## Known functional gaps to address before relying on this in production
 
-- **Password reset has no real email delivery.** With `DEBUG=false` (correct
-  for production), `/auth/forgot-password` no longer returns a debug token
-  — but nothing sends a real email either, so the flow is currently a dead
-  end for real users. Wire up a provider (SendGrid/SES/Postmark/etc.) in
-  `app/services/auth_service.py`'s `request_password_reset` before you rely
-  on this in production.
 - **Push notifications are a no-op** until you set `PUSH_PROVIDER=fcm` with
   a real Firebase service account (`app/services/push_provider.py` has the
   integration point already stubbed in).

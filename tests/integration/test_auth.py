@@ -102,3 +102,36 @@ async def test_forgot_and_reset_password_flow(client, member_user):
 
     login = await client.post("/api/v1/auth/login", json={"email": user.email, "password": "BrandNewPass123!"})
     assert login.status_code == 200
+
+
+async def test_forgot_password_sends_email_via_configured_provider(client, member_user, monkeypatch):
+    user, _password = member_user
+    sent = {}
+
+    class FakeProvider:
+        async def send(self, *, to, subject, text):
+            sent["to"] = to
+            sent["subject"] = subject
+            sent["text"] = text
+
+    monkeypatch.setattr("app.services.auth_service.get_email_provider", lambda: FakeProvider())
+
+    resp = await client.post("/api/v1/auth/forgot-password", json={"email": user.email})
+    assert resp.status_code == 200
+    assert sent["to"] == user.email
+    assert "Reset your" in sent["subject"]
+    assert resp.json()["debug_reset_token"] in sent["text"]
+
+
+async def test_forgot_password_still_succeeds_if_email_delivery_fails(client, member_user, monkeypatch):
+    user, _password = member_user
+
+    class FailingProvider:
+        async def send(self, *, to, subject, text):
+            raise RuntimeError("provider down")
+
+    monkeypatch.setattr("app.services.auth_service.get_email_provider", lambda: FailingProvider())
+
+    resp = await client.post("/api/v1/auth/forgot-password", json={"email": user.email})
+    assert resp.status_code == 200
+    assert resp.json().get("debug_reset_token")

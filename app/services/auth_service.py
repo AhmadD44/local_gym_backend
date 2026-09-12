@@ -13,6 +13,7 @@ Refresh token security model:
   family is revoked, forcing re-authentication.
 """
 
+import logging
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -20,6 +21,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import BadRequestError, ConflictError, UnauthorizedError
 from app.core.security import (
     TokenError,
@@ -35,6 +37,9 @@ from app.models.enums import UserRole
 from app.models.profiles import MemberProfile
 from app.models.user import PasswordResetToken, RefreshSession, User
 from app.services.audit_service import record_audit_log
+from app.services.email_provider import get_email_provider
+
+logger = logging.getLogger("gym.auth")
 
 
 async def _generate_member_code(session: AsyncSession) -> str:
@@ -236,6 +241,23 @@ async def request_password_reset(session: AsyncSession, *, email: str) -> str | 
         )
     )
     await session.commit()
+
+    try:
+        await get_email_provider().send(
+            to=email,
+            subject=f"Reset your {settings.app_name} password",
+            text=(
+                "We received a request to reset your password.\n\n"
+                f"Enter this code in the app's Reset Password screen:\n\n{raw_token}\n\n"
+                "This code expires in 30 minutes. If you didn't request this, you can ignore this email."
+            ),
+        )
+    except Exception:
+        # Delivery failure must never surface to the caller (this endpoint
+        # always returns success to avoid account enumeration) — but it
+        # must be visible in logs, since it's otherwise silent.
+        logger.exception("password_reset_email_failed")
+
     return raw_token
 
 

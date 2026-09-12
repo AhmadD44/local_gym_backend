@@ -60,6 +60,11 @@ class Settings(BaseSettings):
     push_provider: str = "none"
     fcm_service_account_json: str = ""
 
+    email_provider: str = "none"
+    brevo_api_key: str = ""
+    email_from_address: str = "no-reply@example.com"
+    email_from_name: str = "Gym Management System"
+
     @field_validator("cors_origins")
     @classmethod
     def _noop(cls, v: str) -> str:

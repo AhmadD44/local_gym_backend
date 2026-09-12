@@ -168,10 +168,12 @@ Requires auth. **Revokes all refresh sessions** on success (forces re-login ever
 Public. Rate-limited (3/min per IP). Always returns 200 with a generic message regardless of
 whether the email exists (no account enumeration).
 - Body: `{ "email": string }`
-- 200 → `ForgotPasswordResponse`: `{ "message": string, "debug_reset_token": string|null }` —
-  `debug_reset_token` is **only ever populated when the server runs with `DEBUG=true`** (never in
-  production); in production there is currently no email delivery wired up (see known limitations),
-  so treat this as a dev/test-only field.
+- 200 → `ForgotPasswordResponse`: `{ "message": string, "debug_reset_token": string|null }`
+- In production, if the email belongs to a real account, a reset email is sent (via Brevo) containing
+  the raw reset code as plain text — the user copies it into the app's Reset Password screen. The
+  code expires in **30 minutes**. `debug_reset_token` is **only ever populated when the server runs
+  with `DEBUG=true`** (local/dev only) — in production it's always `null`, so don't build a Flutter
+  flow that reads it; the code only ever arrives by email in production.
 
 ### `POST /auth/reset-password`
 Public. Rate-limited (5/min per IP). Also revokes all refresh sessions on success.

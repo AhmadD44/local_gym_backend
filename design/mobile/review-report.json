@@ -1,0 +1,204 @@
+{
+  "screens_reviewed": 31,
+  "screens": [
+    {
+      "screen": "home",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 5
+    },
+    {
+      "screen": "workouts",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 10
+    },
+    {
+      "screen": "session",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 2
+    },
+    {
+      "screen": "complete",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 2
+    },
+    {
+      "screen": "classes",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 14
+    },
+    {
+      "screen": "class",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 1
+    },
+    {
+      "screen": "progress",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 7
+    },
+    {
+      "screen": "nutrition",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 3
+    },
+    {
+      "screen": "water",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 4
+    },
+    {
+      "screen": "chat",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 1
+    },
+    {
+      "screen": "membership",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 2
+    },
+    {
+      "screen": "plans",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 4
+    },
+    {
+      "screen": "shop",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 7
+    },
+    {
+      "screen": "product",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 2
+    },
+    {
+      "screen": "cart",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 1
+    },
+    {
+      "screen": "checkout",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 1
+    },
+    {
+      "screen": "order",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 1
+    },
+    {
+      "screen": "profile",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 10
+    },
+    {
+      "screen": "settings",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 2
+    },
+    {
+      "screen": "notifications",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 5
+    },
+    {
+      "screen": "gym",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 1
+    },
+    {
+      "screen": "login",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 3
+    },
+    {
+      "screen": "trainer",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 5
+    },
+    {
+      "screen": "clients",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 4
+    },
+    {
+      "screen": "client",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 3
+    },
+    {
+      "screen": "builder",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 1
+    },
+    {
+      "screen": "admin",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 4
+    },
+    {
+      "screen": "payments",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 1
+    },
+    {
+      "screen": "admin-orders",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 2
+    },
+    {
+      "screen": "admin-members",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 6
+    },
+    {
+      "screen": "admin-classes",
+      "overflow": false,
+      "bodyOverflow": false,
+      "buttons": 4
+    }
+  ],
+  "narrow_overflow": [],
+  "runtime_errors": [],
+  "interaction_checks": [
+    "water",
+    "booking",
+    "cancellation",
+    "cart quantity",
+    "checkout",
+    "meal logging",
+    "chat",
+    "workout completion",
+    "admin order transitions"
+  ]
+}

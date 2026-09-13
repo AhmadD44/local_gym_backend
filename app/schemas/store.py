@@ -117,6 +117,15 @@ class OrderRead(TimestampedModel):
     items: list[OrderItemRead]
 
 
+class OrderMemberRead(IDModel):
+    full_name: str
+    member_code: str
+
+
+class OrderAdminRead(OrderRead):
+    member: OrderMemberRead
+
+
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
 

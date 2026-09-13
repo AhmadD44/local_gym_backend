@@ -18,6 +18,7 @@ from app.schemas.store import (
     CartItemUpdate,
     CartRead,
     CheckoutRequest,
+    OrderAdminRead,
     OrderRead,
     OrderStatusUpdate,
     ProductCategoryCreate,
@@ -290,7 +291,7 @@ async def get_order(
 
 @router.get(
     "/orders",
-    response_model=Page[OrderRead],
+    response_model=Page[OrderAdminRead],
     dependencies=[Depends(require_admin)],
     summary="List all orders (admin only)",
 )
@@ -302,7 +303,11 @@ async def list_orders(
 ):
     from app.models.store import StoreOrder
 
-    stmt = select(StoreOrder).options(selectinload(StoreOrder.items)).order_by(StoreOrder.created_at.desc())
+    stmt = (
+        select(StoreOrder)
+        .options(selectinload(StoreOrder.items), selectinload(StoreOrder.member))
+        .order_by(StoreOrder.created_at.desc())
+    )
     if status_filter:
         stmt = stmt.where(StoreOrder.status == status_filter)
     params = PageParams(page=page, page_size=page_size)

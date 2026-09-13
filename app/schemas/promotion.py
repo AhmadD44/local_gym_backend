@@ -39,6 +39,9 @@ class PromotionUpdate(BaseModel):
     is_active: bool | None = None
     stack_priority: int | None = None
     combinable: bool | None = None
+    product_ids: list[uuid.UUID] | None = None
+    category_ids: list[uuid.UUID] | None = None
+    plan_ids: list[uuid.UUID] | None = None
 
 
 class PromotionRead(TimestampedModel):

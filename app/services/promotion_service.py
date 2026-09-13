@@ -138,7 +138,17 @@ async def get_promotion(session: AsyncSession, *, promotion_id: uuid.UUID) -> Pr
 
 async def update_promotion(session: AsyncSession, *, promotion_id: uuid.UUID, data) -> Promotion:
     promotion = await get_promotion(session, promotion_id=promotion_id)
-    for field, value in data.model_dump(exclude_unset=True).items():
+    values = data.model_dump(exclude_unset=True)
+    # Omitted/null targets preserve existing links; an explicit empty list clears them.
+    for field, relationship, model, key in (
+        ("product_ids", "products", PromotionProduct, "product_id"),
+        ("category_ids", "categories", PromotionCategory, "category_id"),
+        ("plan_ids", "plans", PromotionMembershipPlan, "plan_id"),
+    ):
+        ids = values.pop(field, None)
+        if ids is not None:
+            setattr(promotion, relationship, [model(**{key: target_id}) for target_id in dict.fromkeys(ids)])
+    for field, value in values.items():
         setattr(promotion, field, value)
     await session.commit()
     return await get_promotion(session, promotion_id=promotion_id)

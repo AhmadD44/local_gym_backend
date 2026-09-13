@@ -30,6 +30,7 @@ class MembershipPlanRead(TimestampedModel):
     duration_days: int
     price: Decimal
     is_active: bool
+    effective_price: Decimal | None = None
 
 
 class MembershipSubscribeRequest(ORMModel):

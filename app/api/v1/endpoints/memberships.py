@@ -23,6 +23,7 @@ from app.schemas.membership import (
     MembershipSubscriptionRead,
 )
 from app.services import membership_service
+from app.services.promotion_service import apply_stacked_discount, get_active_promotions_for_plan
 
 router = APIRouter(prefix="/memberships", tags=["memberships"])
 
@@ -33,7 +34,14 @@ async def list_plans(db: AsyncSession = Depends(get_db), active_only: bool = Tru
     if active_only:
         stmt = stmt.where(MembershipPlan.is_active.is_(True))
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    plans = list(result.scalars().all())
+    items = []
+    for plan in plans:
+        promotions = await get_active_promotions_for_plan(db, plan_id=plan.id)
+        item = MembershipPlanRead.model_validate(plan)
+        item.effective_price = plan.price - apply_stacked_discount(plan.price, promotions)
+        items.append(item)
+    return items
 
 
 @router.post(

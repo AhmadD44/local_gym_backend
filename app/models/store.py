@@ -140,6 +140,7 @@ class StoreOrder(Base, UUIDPKMixin, TimestampMixin):
     items: Mapped[list["StoreOrderItem"]] = relationship(
         "StoreOrderItem", back_populates="order", cascade="all, delete-orphan"
     )
+    member = relationship("MemberProfile")
 
 
 class StoreOrderItem(Base, UUIDPKMixin):

@@ -9,6 +9,7 @@ from app.core.exceptions import BadRequestError, ConflictError, NotFoundError
 from app.models.enums import MembershipStatus, PaymentStatus
 from app.models.membership import MembershipPlan, MembershipSubscription
 from app.services.audit_service import record_audit_log
+from app.services.promotion_service import apply_stacked_discount, get_active_promotions_for_plan
 
 
 async def get_active_or_pending_subscription(
@@ -37,12 +38,14 @@ async def subscribe_member(
     if plan is None or not plan.is_active:
         raise NotFoundError("Membership plan not found")
 
+    promotions = await get_active_promotions_for_plan(session, plan_id=plan.id)
+    discount = apply_stacked_discount(plan.price, promotions)
     subscription = MembershipSubscription(
         member_id=member_id,
         plan_id=plan_id,
         status=MembershipStatus.PENDING,
         payment_status=PaymentStatus.PENDING,
-        price_at_purchase=plan.price,
+        price_at_purchase=plan.price - discount,
     )
     session.add(subscription)
     try:

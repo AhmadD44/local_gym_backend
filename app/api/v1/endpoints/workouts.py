@@ -61,15 +61,7 @@ async def create_program(
     return await workout_service.create_program(db, trainer_id=trainer.id, data=payload)
 
 
-@router.get("/programs/{program_id}", response_model=WorkoutProgramRead, summary="Get a workout program")
-async def get_program(
-    program_id: uuid.UUID, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_active_user)
-):
-    program = await workout_service.get_program_detail(db, program_id=program_id)
-    await _assert_program_access(db, program, user)
-    return program
-
-
+# Keep this literal route before /programs/{program_id}, or "me" is parsed as a UUID.
 @router.get(
     "/programs/me",
     response_model=list[WorkoutProgramSummary],
@@ -80,6 +72,15 @@ async def list_my_programs(
 ):
     member = await get_member_profile_for_user(user, db)
     return await workout_service.list_programs_for_member(db, member_id=member.id)
+
+
+@router.get("/programs/{program_id}", response_model=WorkoutProgramRead, summary="Get a workout program")
+async def get_program(
+    program_id: uuid.UUID, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_active_user)
+):
+    program = await workout_service.get_program_detail(db, program_id=program_id)
+    await _assert_program_access(db, program, user)
+    return program
 
 
 @router.get(
